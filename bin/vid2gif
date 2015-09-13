@@ -3,6 +3,7 @@
 require 'optparse'
 require 'chronic_duration'
 require 'open3'
+require 'tempfile'
 
 options = {}
 
