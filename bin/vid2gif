@@ -81,6 +81,12 @@ OptionParser.new do |opts|
   end
 end.parse!
 
+if ARGV.empty?
+  puts 'Usage: vid2gif [options] filename.mp4'
+  puts '(see -h for complete usage)'
+  exit
+end
+
 palette = Tempfile.new(['gif_palette', '.gif'])
 
 filters = []
