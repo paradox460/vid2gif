@@ -1,0 +1,126 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'chronic_duration'
+require 'open3'
+
+options = {}
+
+dither_setting = {
+           bayer1: 'bayer:bayer_scale=1',
+           bayer2: 'bayer:bayer_scale=2',
+           bayer3: 'bayer:bayer_scale=3',
+         heckbert: 'heckbert',
+  floyd_steinberg: 'floyd_steinberg',
+          sierra2: 'sierra2',
+         sierra24: 'sierra2_4a'
+}
+OptionParser.new do |opts|
+  opts.banner = 'Usage: vid2gif [options] filename.mp4'
+
+  opts.separator ''
+  opts.separator 'Video options:'
+
+  opts.on('-s', '--start TIME', 'Video Start timecode', '  h:m:s.sss form, for ffmpeg') do |time|
+    options[:start] = ChronicDuration.parse(time)
+  end
+
+  opts.on('-t', '--time TIME', Float, 'Duration of video/gif') do |time|
+    options[:duration] = time
+  end
+
+  opts.on('-e', '--end TIME', 'Video end timecode') do |time|
+    fail ArgumentError, 'Duration (-t) must be nil to use end timecode' unless options[:duration].nil?
+    e = ChronicDuration.parse(time)
+    s = options[:start] || 0
+    options[:duration] = e - s
+  end
+
+  opts.separator ''
+  opts.separator 'Gif output options:'
+
+  opts.on('-r', '--size SIZE', /(-?\d+)(?:x(-?\d+))?/, 'WIDTH[xHEIGHT]', '  Use -1 to preserve aspect ratio (ex -1x200 for a gif 200px tall and whatever wide)') do |_, width, height|
+    options[:width] = width
+    options[:height] = height
+  end
+
+  opts.on('-f', '--fps FRAMERATE', Float, 'Framerate of output gif', '  Defaults to video\'s framerate') do |fps|
+    options[:framerate] = fps
+  end
+
+  opts.on('-o', '--output FILENAME', 'gif output name. Defaults to input name') do |filename|
+    options[:filename] = filename
+  end
+
+  opts.separator ''
+  opts.separator 'Stuff for nerds'
+
+  opts.on('-d', '--diff', 'use diff for stats_mode setting in palettegen.', '  tl;dr: favor whats moving for palette') do |diff|
+    options[:diff] = diff
+  end
+
+  opts.on('--dither MODE', dither_setting.keys, 'Dither settings.', '  Consult ffmpeg manual for details') do |dither|
+    options[:dither] = dither_setting[dither]
+  end
+
+  opts.on '--dmr', '--diff-mode-rectangle', 'Enable diff-mode: rectangle for dithering', '  Can lead to smaller files' do |dmr|
+    options[:diff_mode] = dmr
+  end
+
+  opts.separator ''
+  opts.separator 'Other stuff:'
+
+  opts.on_tail('-h', '--help', 'Show this message') do
+    puts opts
+    exit
+  end
+
+  opts.on_tail('-v', '--version', 'Show the version') do
+    puts Vid2gif::Version
+    exit
+  end
+end.parse!
+
+palette = Tempfile.new(['gif_palette', '.gif'])
+
+filters = []
+filters << "fps=#{options[:fps]}" if options[:fps]
+
+# rubocop:disable Style/ParenthesesAroundCondition
+filters << 'scale=%s:%s:flags=lanczos' % [options[:width] || -1, options[:height] || -1] if (options[:width] || options[:height])
+# rubocop:enable Style/ParenthesesAroundCondition
+
+palettegen_filters = 'palettegen'
+palettegen_filters << '=stats_mode=diff' if options[:diff]
+
+arguments = []
+arguments << "-ss #{options[:start]}" if options[:start]
+arguments << "-t #{options[:duration]}" if options[:duration]
+arguments << "-i #{ARGV[0]}"
+
+puts "Generating palette\n"
+Open3.popen2e(['ffmpeg', *arguments, "-vf #{filters.dup.push(palettegen_filters).join(',')}", "-y #{palette.path}"].join(' ')) do |_, output, _|
+  puts output.read
+end
+
+paletteuse_filters_string = 'paletteuse'
+paletteuse_filters = []
+paletteuse_filters << "dither=#{options[:dither]}" if options[:dither]
+paletteuse_filters << 'diff_mode=rectangle' if options[:diff_mode]
+paletteuse_filters_string += "=#{paletteuse_filters.join(':')}" unless paletteuse_filters.empty?
+
+filename = options[:filename] || File.basename(ARGV[0], '.*') + '.gif'
+
+if filters.empty?
+  filter_command = "[0:v][1:v] #{paletteuse_filters_string}"
+else
+  filter_command = "#{filters.join(',')} [x]; [x][1:v] #{paletteuse_filters_string}"
+end
+puts "Generating gif\n"
+Open3.popen2e(['ffmpeg', *arguments, "-i #{palette.path}", "-lavfi \"#{filter_command}\"", "-y #{filename}"].join(' ')) do |_, output, _|
+  puts output.read
+end
+
+palette.unlink
+
+puts "Gif created at #{filename}"
