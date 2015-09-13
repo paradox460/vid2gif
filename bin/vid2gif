@@ -103,7 +103,7 @@ palettegen_filters << '=stats_mode=diff' if options[:diff]
 arguments = []
 arguments << "-ss #{options[:start]}" if options[:start]
 arguments << "-t #{options[:duration]}" if options[:duration]
-arguments << "-i #{ARGV[0]}"
+arguments << "-i \"#{ARGV[0]}\""
 
 puts "Generating palette\n"
 Open3.popen2e(['ffmpeg', *arguments, "-vf #{filters.dup.push(palettegen_filters).join(',')}", "-y #{palette.path}"].join(' ')) do |_, output, _|
