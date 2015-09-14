@@ -1,0 +1,84 @@
+.TH "VID2GIF" "1" "September 2015" "" ""
+.SH NAME
+.PP
+vid2gif \- turn videos into gifs
+.SH SYNOPSIS
+.PP
+\f[B]vid2gif\f[] [\f[I]options\f[]] \f[I]file\f[]
+.SH DESCRIPTION
+.PP
+\f[B]vid2gif\f[] is a simple tool for turning videos into gifs.
+Under the covers it relies completely on ffmpeg for its magic.
+.SH GENERAL OPTIONS
+.TP
+.B \f[B]\-h\f[], \f[B]\-\-help\f[]
+Show help page
+.RS
+.RE
+.TP
+.B \f[B]\-v\f[], \f[B]\-\-version\f[]
+Print version
+.RS
+.RE
+.SH VIDEO OPTIONS
+.TP
+.B \f[B]\-s\f[], \f[B]\-\-start\f[] \f[I]timecode\f[]
+Video segment start timecode; either \f[I]hh:mm:ss.sss\f[] or
+\f[I]ss.sss\f[]
+.RS
+.RE
+.TP
+.B \f[B]\-e\f[], \f[B]\-\-end\f[] \f[I]timecode\f[]
+Video segment end timecode; either \f[I]hh:mm:ss.sss\f[] or
+\f[I]ss.sss\f[] (from start)
+.RS
+.RE
+.TP
+.B \f[B]\-t\f[], \f[B]\-\-time\f[] \f[I]seconds\f[]
+Duration of gif.
+Do not use if you use \f[B]\-e\f[]
+.RS
+.RE
+.SH GIF OUTPUT OPTIONS
+.TP
+.B \f[B]\-r\f[], \f[B]\-\-size\f[] \f[I]width\f[][x\f[I]Height\f[]]
+Width and height; Use \-1 to preserve aspect ratio
+.RS
+.RE
+.TP
+.B \f[B]\-f\f[], \f[B]\-\-fps\f[] \f[I]framerate\f[]
+Framerate of output gif.
+Defaults to video framerate
+.RS
+.RE
+.TP
+.B \f[B]\-o\f[], \f[B]\-\-output\f[] \f[I]filename\f[]
+Output filename.
+.RS
+.RE
+.TP
+.B \f[B]\-p\f[], \f[B]\-\-preview\f[]
+Open gif in quicklook after creation.
+\f[B]OS X ONLY:\f[] # PROCESSING OPTIONS
+.RS
+.RE
+.TP
+.B \f[B]\-d\f[], \f[B]\-\-diff\f[]
+Use diff for ffmpeg \f[I]stats_mode\f[] setting during palette
+generation.
+.RS
+.RE
+.TP
+.B \f[B]\-\-dither\f[] \f[I]mode\f[]
+Dither mode for palette use.
+Consult ffmpeg manual for details
+.RS
+.RE
+.TP
+.B \f[B]\-\-dmr\f[], \f[B]\-\-diff\-mode\-rectangle\f[]
+Enable diff\-mode: rectangle when dithering, which helps with motion
+dithering
+.RS
+.RE
+.SH AUTHORS
+Jeff Sandberg.
